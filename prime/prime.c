@@ -150,7 +150,7 @@ long unsigned  *gen_prime_ll_r (long unsigned min, long unsigned max, long unsig
 
 
 // An iterative binary search function.
-bool is_prime_r(long unsigned x, long unsigned arr[], long unsigned p_size) {
+bool is_prime_r(unsigned x, unsigned arr[], unsigned p_size) {
     long unsigned mid, low = 0, high = p_size-1;
 
     while (low < high) {
@@ -217,10 +217,10 @@ bool is_prime_ll_r(long unsigned x, long unsigned arr[], long unsigned p_size) {
 bool is_prime (long unsigned int n) {
     long unsigned i, m;
 
-    if (!(n & 1))
-        return (n == 2);
+    if (n != 2 && (n <= 1 || (!(n & 1))))
+        return false;
 
-    for (i = 3; i*i < n; i++) {
+    for (i = 3; i*i <= n; i++) {
         m = n % i;
         if (m == 0L)
             return false;
