@@ -113,6 +113,4 @@ done:
     printf("sum: %lu\n", sum);
 
     return 0;
-
 }
-
