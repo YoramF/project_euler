@@ -31,25 +31,27 @@ sys     0m0.011s
 
 typedef struct {
     unsigned int x, y, z;
+    int *complete; 
 } func_c_arg_t;
 
 typedef struct {
     unsigned int x, max;
+    int *complete;
+    async_s_func_t s_f;
 } arg_t;
-
-static int s_complete = 0;
-static async_s_func_t s_f;
 
 void func (void *arg, void *res) {
     unsigned int x = (*(arg_t *)arg).x;
     unsigned int max = (*(arg_t *)arg).max;
     unsigned int y, z, d, sq;
+    int *complete = ((arg_t *)arg)->complete;
+    async_s_func_t s_f = ((arg_t *)arg)->s_f;
     func_c_arg_t r;
 
     free(arg);
 
-    for (; x < max && s_complete == 0; x++) {
-        for (z = 1; z < x && s_complete == 0; z++) {
+    for (; x < max && *complete == 0; x++) {
+        for (z = 1; z < x && *complete == 0; z++) {
             d = x-z;
             sq = (unsigned int)sqrt((double)d);
             if (sq*sq != d)
@@ -57,7 +59,7 @@ void func (void *arg, void *res) {
             d = x+z;
             sq = (unsigned int)sqrt((double)d);
             if (sq*sq == d) {
-                for (y = z+1; y < x && s_complete == 0; y++) {
+                for (y = z+1; y < x && *complete == 0; y++) {
                     d = y-z;
                     sq = (unsigned int)sqrt((double)d);
                     if (sq*sq != d)
@@ -76,6 +78,7 @@ void func (void *arg, void *res) {
                             r.x = x;
                             r.y = y;
                             r.z = z;
+                            r.complete = complete;
                             async_call(s_f, &r, NULL);
                             return;
                         }       
@@ -88,7 +91,9 @@ void func (void *arg, void *res) {
 
 void func_s (void *arg, void *res) {
     func_c_arg_t *a = (func_c_arg_t *)arg;
-    s_complete = 1;      
+    int *complete = a->complete;
+
+    *complete = 1;      
     printf("sum: %u\n", a->x + a->y + a->z);   
 }
 
@@ -96,17 +101,21 @@ int main () {
     unsigned int x;
     int i;
     async_id_t  async_id;
+    int complete = 0;
+    async_s_func_t s_f;
 
     async_id = async_init (10);
     s_f = async_sync_func_init(func_s, async_id);
 
     x = 3;
-    while (x < MAX_NUM && s_complete == 0) {
+    while (x < MAX_NUM && complete == 0) {
         for (i = 0; i < 10 && i*SEG < MAX_NUM; i++) {
             arg_t *arg = malloc(sizeof(arg_t));
             arg->x = x;
             x += SEG;
             arg->max = x;
+            arg->complete = &complete;
+            arg->s_f = s_f;
             async_launch(func, NULL, arg, NULL, NULL, async_id);
         }
     }
