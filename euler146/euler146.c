@@ -11,6 +11,13 @@ Consideerations to take:
 2) since n must be even, in order to meat the problem requrement the last digit of n must be 0, otherewise n^2+1 will
 be even and therefore not a prime. So n must be a multiply of 10's
 
+Solution:
+sum: 676333270
+
+real    0m29.309s
+user    0m29.286s
+sys     0m0.007s
+
 */
 
 #include <stdio.h>
