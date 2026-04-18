@@ -367,3 +367,18 @@ bool is_prime_gmp (mpz_t n)
   /* Step 4: after all... */
   return PRIME;
 }
+
+
+/**
+ * interface function to is_prime_gmp
+ */
+bool is_prime_g (long unsigned int n) {
+  mpz_t m_n;
+  bool b;
+
+  mpz_init_set_ui(m_n, n);
+  b = is_prime_gmp(m_n);
+
+  mpz_clear(m_n);
+  return b;
+}

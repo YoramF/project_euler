@@ -10,5 +10,6 @@
 */
 
 bool is_prime_gmp(mpz_t n);
+bool is_prime_g (long unsigned int n);
 
 #endif /* PRIME_GMP_H_ */

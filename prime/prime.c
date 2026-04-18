@@ -181,6 +181,43 @@ bool is_prime_r(unsigned x, unsigned arr[], unsigned p_size) {
         return false;
 }
 
+// An iterative binary search function. Ind will be updated with index into arr
+bool is_prime_r_i(unsigned x, unsigned arr[], unsigned p_size, unsigned *ind) {
+    long unsigned mid, low = 0, high = p_size-1;
+
+    while (low < high) {
+        mid = low + (high - low) / 2;
+
+        // Check if x is present at mid
+        if (arr[mid] == x) {
+            *ind = mid;
+            return true;
+        }
+
+
+        // If x greater, ignore left half
+        if (arr[mid] < x)
+            low = mid + 1;
+
+        // If x is smaller, ignore right half 
+        else if (mid > 0)
+            high = mid - 1;
+
+        // but don't move beyond 0
+        else
+            break;
+    }
+
+    // we got here if low == high
+    // Check if x is present at last position possible (low or high)
+    if (arr[low] == x) {
+        *ind = low;
+        return true;
+    }
+    else
+        return false;
+}
+
 // An iterative binary search function.
 bool is_prime_ll_r(long unsigned x, long unsigned arr[], long unsigned p_size) {
     long unsigned mid, low = 0, high = p_size-1;
@@ -213,6 +250,42 @@ bool is_prime_ll_r(long unsigned x, long unsigned arr[], long unsigned p_size) {
         return false;
 }
 
+// An iterative binary search function. ind will be updated with the index into arr[]
+bool is_prime_ll_r_i(long unsigned x, long unsigned arr[], long unsigned p_size, long unsigned *ind) {
+    long unsigned mid, low = 0, high = p_size-1;
+
+    while (low < high) {
+        mid = low + (high - low) / 2;
+
+        // Check if x is present at mid
+        if (arr[mid] == x) {
+            *ind = mid;
+            return true;
+        }
+
+        // If x greater, ignore left half
+        if (arr[mid] < x)
+            low = mid + 1;
+
+        // If x is smaller, ignore right half 
+        else if (mid > 0)
+            high = mid - 1;
+
+        // but don't move beyond 0
+        else
+            break;
+    }
+
+    // we got here if low == high
+    // Check if x is present at last position possible (low or high)
+    if (arr[low] == x) {
+        *ind = low;
+        return true;
+    }
+    else
+        return false;
+}
+
 // stand alone prime chack
 bool is_prime (long unsigned int n) {
     long unsigned i, m;
@@ -220,7 +293,7 @@ bool is_prime (long unsigned int n) {
     if (n != 2 && (n <= 1 || (!(n & 1))))
         return false;
 
-    for (i = 3; i*i <= n; i++) {
+    for (i = 3; i*i <= n; i += 2) {
         m = n % i;
         if (m == 0L)
             return false;
