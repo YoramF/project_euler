@@ -2,7 +2,6 @@
  * https://projecteuler.net/problem=151
  * 
  * Took me a while to undestand the probability calculations.
- * It is possible to use memoization, but it runs fast enough without.
  * 
  * Expected number of times (during each week) that the supervisor finds a single sheet of paper in the envelope: 0.464399
  * 
@@ -12,9 +11,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 typedef union {
     char comb[4] ;           // represent A5, A4, A3, A2 options
@@ -23,18 +19,20 @@ typedef union {
 
 
 // main recursive function that generating different combinations
-double next_comb (stage_t *stage, double prob) {
-    stage_t *l_stage;
+// stage is the current stage
+// prob is the probability to get to this stage
+double next_comb (stage_t stage, double prob) {
+    stage_t l_stage;
     int i, j, c, s;
     double l_prob, comb = 0.0;
 
     // check if this is a single A5 sheet. if it does, return 0
-    if (stage->d == 1)
+    if (stage.d == 1)
         return 0.0;
 
     c = 0;
     for (i = 0; i < 4; i++) {
-        c += stage->comb[i];
+        c += stage.comb[i];
     }
 
     // at this point we are shure that the single sheet is not A5 since this case is being caught by checking  if (stage->d == 1)
@@ -43,29 +41,29 @@ double next_comb (stage_t *stage, double prob) {
         comb += prob;  
     }
 
-    if ((l_stage = malloc(sizeof(stage_t))) == NULL) {
-        perror("Failed to allocate RAM");
-        exit(EXIT_FAILURE);
-    }
-
     // here come the recursive part
     for (i = 3; i >= 0; i--) {
-        l_stage->d = stage->d;
+        l_stage.d = stage.d;
 
-        if (stage->comb[i] > 0) {
-            l_prob = prob * ((double)stage->comb[i]/c);
-            l_stage->comb[i]--;
+        if (stage.comb[i] > 0) {
+            // next stage probability i: current_stage_prob * (number_of_sheets_of type_Ai/total_number_of_sheets)
+            l_prob = prob * ((double)stage.comb[i]/c);
+
+            // remove sheet Ai
+            l_stage.comb[i]--;
+
+            // and update the number of remaining sheets
             for (j = i; j > 0; j--) {
                 // constract new combination and call next_comb
-                l_stage->comb[j-1]++;
+                l_stage.comb[j-1]++;
             }
 
+            // calculate the sum of probabilities down the tree from this stage
             comb += next_comb(l_stage, l_prob);           
         }
     }
 
     // done
-    free(l_stage);
     return comb;
 }
 
@@ -73,9 +71,9 @@ int main () {
     double frc;
     stage_t stage;
 
-    stage.d = 0x1010101;
+    stage.d = 0x1010101;    // {A4, A3, A2, A1} -- first stage, probability to get here is 1
 
-    frc = next_comb(&stage, 1.0);
+    frc = next_comb(stage, 1.0);
 
     printf("Expected number of times (during each week) that the supervisor finds a single sheet of paper in the envelope: %.6f\n", frc);
 
