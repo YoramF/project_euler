@@ -7,6 +7,7 @@ Implrement SETs library
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include "sets.h"
 #include "crc.h"
@@ -80,11 +81,40 @@ static bool _is_eq_func(const void *e_item, const void *n_item,  const unsigned 
 }
 
 // create a new set
-SET *set_create (const size_t max_items, const unsigned int element_size) {
+// this function can have 2 additonal optional variables which are address of insert and compare functions
+// insert function: unsigned int (*_i_func)(const unsigned int n, const void *item,  const unsigned int i_size)
+// compare function: bool (*c_func)(const void *e_item, const void *n_item,  const unsigned int i_size))
+// that will do the internal comperison instead
+// of the default ones
+SET *internal_set_create (const size_t max_items, const unsigned int element_size, ...) {
     SET *set;
     BLOCK *block;
     size_t e_size;
     unsigned int hash_n;
+    va_list args;
+
+    unsigned int (*i_func)(const unsigned int n, const void *item,  const unsigned int i_size);
+    bool (*c_func)(const void *e_item, const void *n_item,  const unsigned int i_size);
+
+    // get optional argument first
+    va_start(args);
+    i_func = va_arg(args, typeof(i_func));
+    if (i_func == (void *)-1) {
+        // no optional arguments
+        i_func = NULL;
+        c_func = NULL;
+    }
+    else {
+        c_func = va_arg(args, typeof(c_func));
+        if (c_func == (void *)-1) {
+            fprintf(stderr, "Inser function was specified but compare function\n");
+            va_end(args);
+            return NULL;
+        }
+    }
+
+    va_end(args);
+
 
     hash_n = max_items > MAX_U_INT? MAX_U_INT: max_items;
 
@@ -109,28 +139,35 @@ SET *set_create (const size_t max_items, const unsigned int element_size) {
     set->hash_n = hash_n;
 
     // set->i_func
-    switch (element_size) {
-        case 1:
-            set->i_func = _i_func_8;
-            set->is_eq_func = _is_eq_func_8;
-            break;
-        case 2:
-            set->i_func = _i_func_16;
-            set->is_eq_func = _is_eq_func_16;
-            break;
-        case 4:
-            set->i_func = _i_func_32;
-            set->is_eq_func = _is_eq_func_32;
-            break;
-        case 8:
-            set->i_func = _i_func_64;
-            set->is_eq_func = _is_eq_func_64;
-            break;
-        default:
-            set->i_func = _i_func;
-            set->is_eq_func = _is_eq_func;
-            break;
+    if (i_func != NULL) {
+        set->i_func = i_func;
+        set->is_eq_func = c_func;
     }
+    else {
+        switch (element_size) {
+            case 1:
+                set->i_func = _i_func_8;
+                set->is_eq_func = _is_eq_func_8;
+                break;
+            case 2:
+                set->i_func = _i_func_16;
+                set->is_eq_func = _is_eq_func_16;
+                break;
+            case 4:
+                set->i_func = _i_func_32;
+                set->is_eq_func = _is_eq_func_32;
+                break;
+            case 8:
+                set->i_func = _i_func_64;
+                set->is_eq_func = _is_eq_func_64;
+                break;
+            default:
+                set->i_func = _i_func;
+                set->is_eq_func = _is_eq_func;
+                break;
+        }
+    }
+
 
     return set;
 }
@@ -256,12 +293,25 @@ static S_ELEMENT *_set_indirect_insert_e (SET *set, const void *item) {
     return ns_e;
 }
 
+
 // insert new item to set. return 1 on success, 0 if item already in set, -1 on error
-// if i_func == NULL use item value for the insert position
-int set_insert (SET *set, void *item) {
+// if this argument is specified and is not NULL, the function will return the item value (the existing one or the just inserted one)
+// the 3rd argument must be a valid address to where the item will be written
+// if the function fail and return -1, the value where the 3rd variable is pointing to is not updated.
+int internal_set_insert (SET *set, void *item, ...) {
     unsigned int hash_i;
     S_ELEMENT *n_e, *c_e;
     unsigned char *data_p;
+    void *r_item;
+    va_list args;
+
+    // get optional arguments
+    va_start(args);
+    r_item = va_arg(args, typeof(r_item));
+    if (r_item == (void *)-1)
+        r_item = NULL;
+
+    va_end(args);
 
     hash_i = set->i_func(set->hash_n, item, set->e_size);
 
@@ -269,28 +319,44 @@ int set_insert (SET *set, void *item) {
     if (set->set[hash_i].block_ptr == NULL) {
         set->set[hash_i] = _set_direct_insert_e(set, item);
         set->e_amount++;
+        // if r_item was provided copy item value to r_item
+        if (r_item != NULL)
+            memcpy(r_item, item, set->e_size);
         return 1;
     }
 
     // if hash location already in set
     c_e = &(set->set[hash_i]);
     data_p = &(c_e->block_ptr->data[(c_e->e_off)*(set->e_size)]);
-    if (set->is_eq_func(data_p, item, set->e_size))
+    if (set->is_eq_func(data_p, item, set->e_size)) {
+        // item already in set. if r_item was provided copy existing item value to r_item
+        if (r_item != NULL)
+            memcpy(r_item, data_p, set->e_size);
         return 0;
+    }
+
 
     // check all existing elements in this location 
     n_e = c_e->e_next;
     while (n_e != NULL) {
         c_e = n_e;
         data_p = &(n_e->block_ptr->data[(n_e->e_off)*(set->e_size)]);
-        if (set->is_eq_func(data_p, item, set->e_size))
-            return 0;
+        if (set->is_eq_func(data_p, item, set->e_size)) {
+        // item already in set. if r_item was provided copy existing item value to r_item
+        if (r_item != NULL)
+            memcpy(r_item, data_p, set->e_size);
+        return 0;
+        }
+
         n_e = n_e->e_next;
     }
 
     // if we got here, we need to add the new element into the chain
     if ((c_e->e_next = _set_indirect_insert_e (set, item)) != NULL) {
         set->e_amount++;
+        // if r_item was provided copy item value to r_item
+        if (r_item != NULL)
+            memcpy(r_item, item, set->e_size);
         return 1;
     }
 
@@ -299,7 +365,6 @@ int set_insert (SET *set, void *item) {
 }
 
 // return true of element in set
-// if i_func == NULL use item value for the insert position  
 bool set_e_in_set (SET *set, void *item) {
     S_ELEMENT *s_e;
     unsigned char *data_p;
@@ -312,6 +377,31 @@ bool set_e_in_set (SET *set, void *item) {
         data_p = &(s_e->block_ptr->data[(s_e->e_off)*(set->e_size)]);        
         if (set->is_eq_func(data_p, item, set->e_size))
             return true;
+        s_e = s_e->e_next;
+    }
+
+    return false;
+}
+
+// this function is used to fetch existing item from set based on given item, where the
+// key to store the item is not the item itself but a portion of it, and the insert and compare functions
+// are user provided functions. If the item is not in the set, it returns false, otherwise the saved item value
+// is copied to r_item address.
+bool set_get_e (SET *set, void *item, void *r_item) {
+    S_ELEMENT *s_e;
+    unsigned char *data_p;
+    unsigned int hash_i;
+
+    hash_i = set->i_func(set->hash_n, item, set->e_size);
+    s_e = &(set->set[hash_i]);
+
+    while (s_e != NULL && s_e->block_ptr != NULL) {
+        data_p = &(s_e->block_ptr->data[(s_e->e_off)*(set->e_size)]);        
+        if (set->is_eq_func(data_p, item, set->e_size)) {
+            memcpy(r_item, data_p, set->e_size);
+            return true;
+        }
+
         s_e = s_e->e_next;
     }
 

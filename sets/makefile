@@ -17,4 +17,4 @@ crc_d.o: crc.c crc.h
 	gcc -g -c crc.c -o crc_d.o
 
 tst_d: tst.c libsets_d.a
-	gcc -g tst.c -o tst_debug.exe -lsets_d -L .
+	gcc -g tst.c -o tst_d -lsets_d -L .
