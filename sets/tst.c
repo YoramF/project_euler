@@ -132,6 +132,10 @@ int main () {
         lli *= i;
         printf("value: %lu, %s\n", lli, set_e_in_set(s, &lli)? "In set": "not in set");
     }
+    
+    
+    // we need to delete the set since now we are going to use different type of item
+    set_delete(s);
 
     // now use set with optional variables
     printf("Start using user mode functions on record\n");
@@ -158,7 +162,8 @@ int main () {
     printf("set amount: %ld\n", set_amount(s));
     dump_set(s);
 
-    set_clear(s);    
+    // again, we change the type of item so new set need to be created
+    set_delete(s);    
 
     // now use set with optional variables and store pointers instead of actual data
     // In case the pointer is point to a key'ed record and we need to avoid entering the same key into
@@ -209,7 +214,7 @@ int main () {
     }
 
     // only after we retrieved all values from the set, we can cear it.
-    set_clear(s);  
+    set_delete(s);  
 
     return 0;
 }
