@@ -1,67 +1,86 @@
 /**
  * A comlext numbers arithmetic functions
  */
-
 #include <stdio.h>
-#include <stdbool.h>
+#include <imaginary.h>
 
-#define set_im(im,val)  ({\
-        (im).num  = (val);\
-        (im).is_im = true;})
+/**
+ * Add two complex numbers c1 & c2 and return complex result
+ */
+complex_t c_add (complex_t c1, complex_t c2) {
+    complex_t r;
 
-typedef struct {
-    int     num;
-    bool    is_im;
-} im_t;
+    r.re = c1.re + c2.re;
+    r.im = c1.im + c2.im;
 
-typedef struct {
-    int         re;     // real p[art
-    im_t        im;     // imaginary part
-} complex_t;
-
-
-im_t i_pwr (im_t im, int pwr) {
-    im_t im_r;
-    int s = 1;
-
-    switch (pwr % 4) {
-        case 0:
-            im_r.is_im = false;
-            break;
-        case 1:
-            im_r.is_im = im.is_im;
-            break;
-        case 2:
-            s = -1;
-            im_r.is_im = false;
-            break;
-        case 3:
-            s = -1;
-            im_r.is_im = im.is_im;            
-
-    }
-
-    im_r.num = 1;
-    for (int j = 0; j < pwr; j++)
-        im_r.num *= im.num;
-
-    im_r.num *= s;
-
-    return im_r;   
+    return r;
 }
 
-int main () {
-    im_t im, imr;
-    int num;
-    int pwr;
+/**
+ * Multiply complex number c1 by complex number c2 and return new complex result
+ */
+complex_t c_mul (complex_t c1, complex_t c2) {
+    complex_t r;
+    // im_t im;
+    long int im;
+    long int re;
 
-    while (1) {
-        printf("im: ,pwr: ");
-        scanf("%d, %d", &num, &pwr);
-        set_im(im, num);
-        im.is_im = true;
+    re = c1.re * c2.re;
 
-        imr = i_pwr(im, pwr);
-        printf("im.num=%d, im.i=%d\n", imr.num, imr.is_im);
-    }
+    im = (c1.re * c2.im) + (c2.re * c1.im);
+    
+    re += -(c1.im * c2.im);
+
+    r.im = im;
+    r.re = re;
+
+    return r;
 }
+
+/**
+ * Raise complex number c1 by power pwr and return complex result
+ */
+complex_t c_pwr (complex_t c1, int pwr) {
+    complex_t r;
+
+    // init r to 1 == (1 + 0i)
+    r.re = 1L;
+    r.im = 0L;
+
+    for (int i = 0; i < pwr; i++)
+        r = c_mul(r, c1);
+
+    return r;
+}
+
+char  *c_print (complex_t c, char *s) {
+    long int im;
+    char op;
+
+    im = c.im;
+    if (im >= 0L)
+        op = '+';
+    else {
+        im = -im;
+        op = '-';
+    }
+    sprintf(s, "(%ld %c %ldi)", c.re, op, im);
+    return s;
+}
+
+
+// int main () {
+//     // im_t im, imr;
+//     complex_t c;
+//     char c_str [100];
+//     int pwr;
+
+//     while (1) {
+//         printf("re,im ,pwr: ");
+//         scanf("%d, %d, %d", &c.re, &c.im, &pwr);
+
+//         printf("input: complex: %s, pwr: %d = ", c_print(c, c_str), pwr);
+//         c = c_pwr(c, pwr);
+//         printf("%s\n", c_print(c, c_str));
+//     }
+// }
