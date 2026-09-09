@@ -1,6 +1,10 @@
 /**
  * https://projecteuler.net/problem=155
  * 
+ * With single capacitor we have one value. 
+ * Using fractions p/q keeps everything exact.
+ * We use recurrence building: build S from smaller sets.
+ * To make circuit with k capacitors, the last step must be connecting two smaller sub-circutis in serial and parallel.
  * The way to solve this problem is to by finding sets of fractions S[1]..S[n] where 
  * S[k] = S[i] + S[k-i] (i = 1..k/2)
  * S[1] = {1/1}
