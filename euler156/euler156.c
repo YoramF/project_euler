@@ -33,16 +33,15 @@
  * 
  *  sum: 21295121502550
  *  
- *  real    0m0.037s
- *  user    0m0.032s
- *  sys     0m0.005s
+ *  real    0m0.012s
+ *  user    0m0.009s
+ *  sys     0m0.003s
  * 
  */
 
 #include <stdio.h>
 
 #define MAX         100000000000    // 10^11
-#define INC         100000000       // best inerval based on testing other inervals
 
 /**
  * f(n,d).This function calculate how many times digit d appears in all numbers from 1..n
@@ -118,29 +117,11 @@ long unsigned prune (long unsigned low, long unsigned high, int d) {
         return prune((low + mid + 1), high, d) + prune(low, (low + mid), d);
 }
 
-/**
- * To speen the search, run the prune functions on intervals of size INC. This will reduce the
- * overall number of tests even more
- */
-long unsigned check_intervals (int d) {
-    long unsigned p_sum = 0L, n, max;
-
-    n = 1;
-    while (n < MAX) {
-        max = n + INC;
-        if (max > MAX)
-            max = MAX;
-        p_sum += prune(n, max, d);
-        n = max + 1;
-    }
-    return p_sum;
-}
-
 int main () {
     long unsigned sum = 0L, p;
 
     for (int d = 1; d < 10; d++) {
-        p = check_intervals(d);
+        p = prune(1, MAX, d);
         sum += p;
     }
 
