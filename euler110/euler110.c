@@ -14,7 +14,7 @@ I needed several trials to get a good stopping condition to get the correct answ
 Not knowing the answer or close to it, I used gmp library to handle big numbers. Eventually the correct answer
 could have been found using long unsigned int.
 
-I read other solutions in the forum that took less than a second, but could not anderstand the logic behind tham
+I read other solutions in the forum that took less than a second, but could not understand the logic behind tham
 unless you know the solution in advance. So I stay with my poor algorithm :)
 
 Solution:
